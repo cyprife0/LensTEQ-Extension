@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>LensTEQ</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="popup-container">
+        <header>
+            <h1>🔍 LensTEQ</h1>
+            <p>Deepfake Detector</p>
+        </header>
+        
+        <div class="status" id="status">
+            <p>Ready to scan</p>
+        </div>
+        
+        <div class="result" id="result" style="display:none;">
+            <div class="score" id="score"></div>
+            <div class="verdict" id="verdict"></div>
+        </div>
+        
+        <button id="scanAllBtn" class="btn">🔍 Scan All Images</button>
+        
+        <footer>
+            <p>Powered by LensTEQ</p>
+        </footer>
+    </div>
+    
+    <script src="popup.js"></script>
+</body>
+</html>

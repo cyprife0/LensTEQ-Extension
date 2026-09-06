@@ -1,0 +1,42 @@
+/* LensTEQ Web Overlay Styles - Scoped strictly to prevent page layout corruption */
+.lensteq-scan-btn,
+.lensteq-badge {
+  all: initial;
+  position: fixed !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  color: #ffffff !important;
+  padding: 6px 10px !important;
+  border-radius: 8px !important;
+  z-index: 2147483647 !important;
+  white-space: nowrap !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+  box-sizing: border-box !important;
+  pointer-events: auto !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+.lensteq-scan-btn {
+  background: #6c5ce7 !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: opacity 0.2s ease, transform 0.1s ease !important;
+  display: none;
+}
+
+.lensteq-scan-btn:hover {
+  opacity: 0.9 !important;
+  transform: scale(1.02) !important;
+}
+
+.lensteq-scan-btn:active {
+  transform: scale(0.98) !important;
+}
+
+.lensteq-badge {
+  display: none;
+  transition: background 0.3s ease !important;
+}

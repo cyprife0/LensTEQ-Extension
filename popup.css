@@ -1,0 +1,75 @@
+body {
+  width: 350px;
+  padding: 0;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0a0a0a;
+  color: white;
+}
+
+.popup-container {
+  padding: 20px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+header h1 {
+  font-size: 24px;
+  margin: 0;
+  background: linear-gradient(135deg, #6c5ce7, #00b894);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.status {
+  text-align: center;
+  padding: 20px;
+  background: #1a1a2e;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.result {
+  text-align: center;
+  padding: 20px;
+  background: #1a1a2e;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.score {
+  font-size: 36px;
+  font-weight: bold;
+}
+
+.verdict {
+  font-size: 16px;
+  margin-top: 10px;
+}
+
+.btn {
+  width: 100%;
+  padding: 15px;
+  background: #6c5ce7;
+  color: white;
+  border: none;
+  border-radius: 25px;
+  font-size: 16px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn:hover {
+  background: #5f3dc4;
+}
+
+footer {
+  text-align: center;
+  margin-top: 20px;
+  color: #666;
+  font-size: 12px;
+}
