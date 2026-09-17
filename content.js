@@ -206,9 +206,24 @@ function deepElementsFromPoint(x, y) {
   return all;
 }
 
-const CARD_SELECTOR =
+const YT_CARD_SELECTOR =
   'ytd-reel-item-renderer, ytd-rich-item-renderer, ytd-grid-video-renderer, ' +
-  'ytd-compact-video-renderer, ytd-video-renderer, article, figure';
+  'ytd-compact-video-renderer, ytd-video-renderer';
+const CARD_SELECTOR = YT_CARD_SELECTOR + ', article, figure';
+
+// A generic <article>/<figure> is only worth scanning if it actually holds
+// real media. Sites like GitHub wrap text-only feed items in <article>,
+// with nothing but tiny logos or avatars inside.
+function isRealSizeMedia(el) {
+  const r = el.getBoundingClientRect();
+  if (el.tagName === 'AUDIO') return el.controls || (r.width > 0 && r.height > 0);
+  return r.width >= 100 && r.height >= 60;
+}
+
+function hasScannableMedia(card) {
+  if (card.matches(YT_CARD_SELECTOR)) return true; // thumbnails may still be loading
+  return [...card.querySelectorAll('img, video, audio')].some(isRealSizeMedia);
+}
 
 function isFullScreenSized(el) {
   const r = el.getBoundingClientRect();
@@ -220,8 +235,8 @@ function findCardElement(target, x, y) {
 
   const card = target.closest(CARD_SELECTOR);
 
-  if (card) {
-    return isFullScreenSized(card) ? null : card;
+  if (card && !isFullScreenSized(card) && hasScannableMedia(card)) {
+    return card;
   }
 
   // YouTube's hover preview plays in a separate player that sits ON TOP of
@@ -232,11 +247,11 @@ function findCardElement(target, x, y) {
     const under = deepElementsFromPoint(x, y).find(
       (el) => el.matches && el.matches(CARD_SELECTOR)
     );
-    if (under && !isFullScreenSized(under)) return under;
+    if (under && !isFullScreenSized(under) && hasScannableMedia(under)) return under;
   }
 
   const video = target.closest('video');
-  if (video) return video;
+  if (video && isRealSizeMedia(video)) return video;
 
   const audio = target.closest('audio');
   if (audio) return audio;
