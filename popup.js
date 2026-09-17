@@ -28,13 +28,24 @@ function showResult(result) {
   document.getElementById('result').style.display = 'block';
   
   const score = document.getElementById('score');
+  const verdictEl = document.getElementById('verdict');
+
+  // Backend failures must never be displayed as a real/fake score
+  if (result.error || result.verdict === 'Error') {
+    score.textContent = '--';
+    score.style.color = '#d63031';
+    verdictEl.textContent = '❌ Scan failed - try again';
+    verdictEl.style.color = '#d63031';
+    return;
+  }
+
   score.textContent = result.final_score + '%';
   
-  if (result.final_score > 70) {
+  if (result.final_score >= 80) {
     score.style.color = '#d63031';
     document.getElementById('verdict').textContent = '🔴 HIGH RISK - AI Generated';
     document.getElementById('verdict').style.color = '#d63031';
-  } else if (result.final_score > 50) {
+  } else if (result.final_score >= 55) {
     score.style.color = '#fdcb6e';
     document.getElementById('verdict').textContent = '🟡 SUSPICIOUS';
     document.getElementById('verdict').style.color = '#fdcb6e';

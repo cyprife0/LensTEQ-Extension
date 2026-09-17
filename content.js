@@ -321,13 +321,13 @@ function applyResult(cardId, result) {
 
   let text, color;
 
-  if (result.verdict === 'Error') {
+  if (result.error || result.verdict === 'Error') {
     text = '❌ API Error';
     color = '#d63031';
-  } else if (rawScore > 70) {
+  } else if (rawScore >= 80) {
     text = `🔴 FAKE (${formattedScore}%)`;
     color = '#d63031';
-  } else if (rawScore > 50) {
+  } else if (rawScore >= 55) {
     text = `🟡 SUSPICIOUS (${formattedScore}%)`;
     color = '#fdcb6e';
   } else {
@@ -357,13 +357,13 @@ function showTextResultBadge(result) {
   const formattedScore = rawScore % 1 === 0 ? rawScore : rawScore.toFixed(1);
 
   let text, color;
-  if (result.verdict === 'Error') {
+  if (result.error || result.verdict === 'Error') {
     text = '❌ API Error';
     color = '#d63031';
-  } else if (rawScore > 70) {
+  } else if (rawScore >= 80) {
     text = `🔴 AI-WRITTEN (${formattedScore}%)`;
     color = '#d63031';
-  } else if (rawScore > 50) {
+  } else if (rawScore >= 55) {
     text = `🟡 SUSPICIOUS (${formattedScore}%)`;
     color = '#fdcb6e';
   } else {
