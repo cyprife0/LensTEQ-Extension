@@ -34,19 +34,79 @@ function getOrCreateCardId(cardEl) {
   return cardEl.dataset.lensteqId;
 }
 
+// Sites like YouTube RECYCLE card elements: when you scroll or navigate,
+// the same <ytd-rich-item-renderer> is reused for a different video. So a
+// result must be keyed by the media itself (video ID or source URL), never
+// by the element, or old results appear on new videos.
+function getMediaKey(cardEl) {
+  if (!cardEl) return null;
+
+  // YouTube: use the video ID from the card's link (/watch?v=ID or /shorts/ID)
+  const link = cardEl.matches('a[href]')
+    ? cardEl
+    : cardEl.querySelector('a[href*="/watch"], a[href*="/shorts/"]');
+  if (link) {
+    try {
+      const u = new URL(link.href, location.href);
+      const v = u.searchParams.get('v');
+      if (v) return `yt:${v}`;
+      const m = u.pathname.match(/\/shorts\/([\w-]+)/);
+      if (m) return `yt:${m[1]}`;
+    } catch (_) { /* fall through */ }
+  }
+
+  // Everything else: use the media source URL
+  const media = cardEl.matches('video, audio, img')
+    ? cardEl
+    : cardEl.querySelector('video, audio, img');
+  const src = media && (media.currentSrc || media.src || media.poster);
+  if (src && src.length < 2000) {
+    // blob: URLs are only unique within a page, so include the page URL
+    return src.startsWith('blob:') ? `blob:${location.href}|${src}` : `src:${src}`;
+  }
+
+  // Last resort: the element itself
+  return getOrCreateCardId(cardEl);
+}
+
+function clampRect(r, bound) {
+  // Never let the overlay area extend beyond the card itself
+  if (!bound || bound.width === 0 || bound.height === 0) return r;
+  const left = Math.max(r.left, bound.left);
+  const top = Math.max(r.top, bound.top);
+  const right = Math.min(r.right, bound.right);
+  const bottom = Math.min(r.bottom, bound.bottom);
+  if (right <= left || bottom <= top) return bound;
+  return { left, top, right, bottom, width: right - left, height: bottom - top };
+}
+
 function getCardBounds(cardEl) {
   if (!cardEl || !cardEl.isConnected) return null;
 
-  const targetEl =
-    cardEl.querySelector('#thumbnail, ytd-thumbnail, video, img, audio') || cardEl;
+  const cardRect = cardEl.getBoundingClientRect();
 
-  // Some elements (audio tags especially, and swapped video/img thumbnails)
-  // can collapse to zero size. Climb up to the nearest ancestor that still
-  // has real dimensions instead of returning a degenerate rect.
-  let el = targetEl;
+  // Prefer the LARGEST visible media area inside the card (the thumbnail),
+  // skipping small or not-yet-loaded images like avatars and lazy Shorts.
+  const candidates = cardEl.matches('video, img, audio')
+    ? [cardEl]
+    : cardEl.querySelectorAll('#thumbnail, ytd-thumbnail, video, img');
+  let best = null;
+  for (const el of candidates) {
+    const r = el.getBoundingClientRect();
+    if (r.width >= 80 && r.height >= 60 &&
+        (!best || r.width * r.height > best.width * best.height)) {
+      best = r;
+    }
+  }
+  if (best) return clampRect(best, cardRect);
+
+  // Some elements (audio tags especially) collapse to zero size. Climb up
+  // to the nearest ancestor with real dimensions, but still keep the
+  // result inside the card's own box when the card has a size.
+  let el = cardEl;
   for (let i = 0; i < 4 && el; i++) {
     const rect = el.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0) return rect;
+    if (rect.width > 0 && rect.height > 0) return clampRect(rect, cardRect);
     el = el.parentElement;
   }
   return null;
@@ -79,7 +139,7 @@ function updateOverlays() {
     return;
   }
 
-  const cardId = getOrCreateCardId(hoveredCard);
+  const cardId = getMediaKey(hoveredCard);
   const storedResult = scanResults.get(cardId);
   const isCurrentlyScanning = scanningMedia.has(cardId);
   const hasVideo =
@@ -146,19 +206,33 @@ function deepElementsFromPoint(x, y) {
   return all;
 }
 
+const CARD_SELECTOR =
+  'ytd-reel-item-renderer, ytd-rich-item-renderer, ytd-grid-video-renderer, ' +
+  'ytd-compact-video-renderer, ytd-video-renderer, article, figure';
+
+function isFullScreenSized(el) {
+  const r = el.getBoundingClientRect();
+  return r.width >= window.innerWidth * 0.85 && r.height >= window.innerHeight * 0.85;
+}
+
 function findCardElement(target, x, y) {
   if (!target || target === document.body || target === document.documentElement) return null;
 
-  const card = target.closest(
-    'ytd-reel-item-renderer, ytd-rich-item-renderer, ytd-grid-video-renderer, ytd-compact-video-renderer, ytd-video-renderer, article, figure'
-  );
+  const card = target.closest(CARD_SELECTOR);
 
   if (card) {
-    const r = card.getBoundingClientRect();
-    if (r.width >= window.innerWidth * 0.85 && r.height >= window.innerHeight * 0.85) {
-      return null;
-    }
-    return card;
+    return isFullScreenSized(card) ? null : card;
+  }
+
+  // YouTube's hover preview plays in a separate player that sits ON TOP of
+  // the card but is not inside it. Look underneath the cursor for the real
+  // card, so the scan result is saved under the card's video ID and shows
+  // again when you hover back.
+  if (typeof x === 'number' && typeof y === 'number' && document.elementsFromPoint) {
+    const under = deepElementsFromPoint(x, y).find(
+      (el) => el.matches && el.matches(CARD_SELECTOR)
+    );
+    if (under && !isFullScreenSized(under)) return under;
   }
 
   const video = target.closest('video');
@@ -212,11 +286,24 @@ window.addEventListener('resize', () => {
   if (hoveredCard) updateOverlays();
 }, { passive: true });
 
+// YouTube is a single-page app: on navigation, hide everything so nothing
+// from the previous page lingers.
+document.addEventListener('yt-navigate-finish', () => {
+  hoveredCard = null;
+  updateOverlays();
+});
+
+// Cards can change content while the mouse sits still (recycled elements,
+// autoplay previews). Re-check the hovered card a few times a second.
+setInterval(() => {
+  if (hoveredCard) updateOverlays();
+}, 400);
+
 scanBtn.onclick = (ev) => {
   ev.preventDefault();
   ev.stopPropagation();
   if (hoveredCard) {
-    const cardId = getOrCreateCardId(hoveredCard);
+    const cardId = getMediaKey(hoveredCard);
     if (!scanningMedia.has(cardId)) {
       scanMedia(hoveredCard, cardId);
     }
